@@ -1,9 +1,0 @@
-export const CAMERA_WIDTH = 1920
-export const CAMERA_HEIGHT = 1080
-
-export const STABILITY_DIFF_THRESHOLD = 5
-export const STABILITY_MOVEMENT_THRESHOLD = 8
-export const STABILITY_HOLD_MS = 3000
-
-export const FRAME_ANALYSIS_INTERVAL_MS = 150
-export const MAX_UPLOAD_DIMENSION = 1500
