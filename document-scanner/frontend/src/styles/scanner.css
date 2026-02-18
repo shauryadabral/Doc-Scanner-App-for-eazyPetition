@@ -1,0 +1,204 @@
+.app-root {
+  font-family: system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+  min-height: 100vh;
+  background: #050810;
+  color: #f5f5f5;
+  display: flex;
+  flex-direction: column;
+}
+
+.app-header {
+  padding: 16px 24px;
+  border-bottom: 1px solid #222531;
+}
+
+.app-main {
+  flex: 1;
+  display: grid;
+  grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr);
+  gap: 16px;
+  padding: 16px 24px 24px;
+}
+
+.left-panel,
+.right-panel {
+  background: #0b0e18;
+  border-radius: 12px;
+  padding: 12px;
+  border: 1px solid #1b1f2c;
+  display: flex;
+  flex-direction: column;
+}
+
+.camera-container {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.video-wrapper {
+  position: relative;
+  border-radius: 12px;
+  overflow: hidden;
+  border: 1px solid #222531;
+  background: #000;
+  min-height: 260px;
+}
+
+.camera-video {
+  width: 100%;
+  height: auto;
+  display: block;
+  object-fit: cover;
+}
+
+.scanner-overlay {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
+.scanner-overlay-svg {
+  width: 100%;
+  height: 100%;
+}
+
+.scanner-overlay-path {
+  fill: rgba(15, 255, 165, 0.06);
+  stroke: #0fffa5;
+  stroke-width: 0.8;
+  stroke-linejoin: round;
+}
+
+.stability-indicator {
+  position: absolute;
+  left: 50%;
+  bottom: 12px;
+  transform: translateX(-50%);
+  padding: 4px 10px;
+  border-radius: 999px;
+  font-size: 11px;
+  backdrop-filter: blur(10px);
+}
+
+.stability-indicator.neutral {
+  background: rgba(34, 37, 49, 0.85);
+  color: #eaeff8;
+}
+
+.stability-indicator.warning {
+  background: rgba(255, 179, 71, 0.9);
+  color: #1b1200;
+}
+
+.stability-indicator.ok {
+  background: rgba(36, 190, 120, 0.9);
+  color: #02130a;
+}
+
+.capture-button,
+.download-button,
+.secondary-button {
+  margin-top: 8px;
+  padding: 10px 16px;
+  border-radius: 999px;
+  border: none;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background 0.15s ease, transform 0.05s ease, opacity 0.1s ease;
+}
+
+.capture-button {
+  background: linear-gradient(90deg, #0fffa5, #24b0ff);
+  color: #031015;
+}
+
+.capture-button:disabled,
+.download-button:disabled,
+.secondary-button:disabled {
+  opacity: 0.35;
+  cursor: default;
+}
+
+.download-button {
+  background: #222531;
+  color: #eaeff8;
+  width: 100%;
+}
+
+.secondary-button {
+  background: #131724;
+  color: #eaeff8;
+}
+
+.results-panel {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.structured-fields {
+  border-radius: 8px;
+  background: #050810;
+  border: 1px solid #1b1f2c;
+  padding: 8px;
+  font-size: 12px;
+}
+
+.structured-fields dl {
+  margin: 0;
+}
+
+.structured-fields dt {
+  font-weight: 600;
+  color: #9ea2b8;
+}
+
+.structured-fields dd {
+  margin: 0 0 4px;
+}
+
+.ocr-results {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+}
+
+.ocr-results-title {
+  font-size: 13px;
+  margin-bottom: 4px;
+  color: #9ea2b8;
+}
+
+.ocr-results-body {
+  flex: 1;
+  margin: 0;
+  padding: 8px;
+  border-radius: 8px;
+  background: #050810;
+  border: 1px solid #1b1f2c;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas,
+    "Liberation Mono", "Courier New", monospace;
+  font-size: 12px;
+  white-space: pre-wrap;
+  overflow: auto;
+}
+
+.error-banner {
+  margin-top: 8px;
+  padding: 6px 10px;
+  border-radius: 8px;
+  background: rgba(255, 99, 132, 0.1);
+  border: 1px solid rgba(255, 99, 132, 0.5);
+  color: #ff9bad;
+  font-size: 12px;
+}
+
+@media (max-width: 960px) {
+  .app-main {
+    grid-template-columns: 1fr;
+  }
+}
