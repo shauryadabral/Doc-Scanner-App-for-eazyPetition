@@ -59,7 +59,7 @@ function processFrame(imageData: ImageData): WorkerOutput {
       edges,
       contours,
       hierarchy,
-      cv.RETR_LIST,
+      cv.RETR_EXTERNAL,
       cv.CHAIN_APPROX_SIMPLE
     );
 
@@ -137,27 +137,47 @@ function pickBestContour(
 ): { x: number; y: number }[] | null {
   let best: { x: number; y: number }[] | null = null;
   let bestArea = 0;
-  const minArea = (width * height) * 0.15;
+  const minArea = (width * height) * 0.08;
 
   for (let i = 0; i < contours.size(); i += 1) {
     const contour = contours.get(i);
     const peri = cv.arcLength(contour, true);
     const approx = new cv.Mat();
-    cv.approxPolyDP(contour, approx, 0.02 * peri, true);
+    cv.approxPolyDP(contour, approx, 0.03 * peri, true);
+
+    let candidate: { x: number; y: number }[] | null = null;
+    let area = 0;
 
     if (approx.rows === 4) {
-      const area = cv.contourArea(approx);
-      if (area > minArea && area > bestArea && cv.isContourConvex(approx)) {
+      area = cv.contourArea(approx);
+      if (area > minArea && cv.isContourConvex(approx)) {
         const points: { x: number; y: number }[] = [];
         for (let j = 0; j < 4; j += 1) {
           const p = approx.intPtr(j);
           points.push({ x: p[0], y: p[1] });
         }
-        best = points;
-        bestArea = area;
+        candidate = points;
+      }
+    } else if (approx.rows > 4) {
+      const rect = cv.boundingRect(approx);
+      area = rect.width * rect.height;
+      if (area > minArea) {
+        candidate = [
+          { x: rect.x, y: rect.y },
+          { x: rect.x + rect.width, y: rect.y },
+          { x: rect.x + rect.width, y: rect.y + rect.height },
+          { x: rect.x, y: rect.y + rect.height }
+        ];
       }
     }
+
+    if (candidate && area > bestArea) {
+      best = candidate;
+      bestArea = area;
+    }
+
     contour.delete();
+    approx.delete();
   }
 
   return best;
