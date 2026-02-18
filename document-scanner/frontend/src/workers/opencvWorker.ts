@@ -7,12 +7,17 @@ type WorkerInput = {
 };
 
 type WorkerOutput = {
+  hasContour: boolean;
   aligned: boolean;
   stabilityScore: number;
   movementVariance: number;
+  alignmentConfidence: number;
+  aspectRatio: number;
 };
 
 let lastCorners: { x: number; y: number }[] | null = null;
+const cornerHistory: { x: number; y: number }[][] = [];
+const HISTORY_SIZE = 15;
 
 const ctx: DedicatedWorkerGlobalScope = self as unknown as DedicatedWorkerGlobalScope;
 
@@ -26,9 +31,12 @@ function processFrame(imageData: ImageData): WorkerOutput {
   const anySelf = self as any;
   if (!anySelf.cv || !anySelf.cv.Mat) {
     return {
+      hasContour: false,
       aligned: false,
       stabilityScore: 0,
-      movementVariance: 0
+      movementVariance: 0,
+      alignmentConfidence: 0,
+      aspectRatio: 1
     };
   }
 
@@ -57,9 +65,12 @@ function processFrame(imageData: ImageData): WorkerOutput {
     if (!best) {
       lastCorners = null;
       return {
+        hasContour: false,
         aligned: false,
         stabilityScore: 0,
-        movementVariance: 0
+        movementVariance: 0,
+        alignmentConfidence: 0,
+        aspectRatio: 1
       };
     }
 
@@ -67,27 +78,43 @@ function processFrame(imageData: ImageData): WorkerOutput {
     const movementVariance = computeMovementVariance(corners, lastCorners);
     lastCorners = corners;
 
+    cornerHistory.push(corners);
+    if (cornerHistory.length > HISTORY_SIZE) {
+      cornerHistory.shift();
+    }
+
     const area = polygonArea(corners);
     const frameArea = imageData.width * imageData.height;
     const fillRatio = frameArea > 0 ? area / frameArea : 0;
-    const aligned = fillRatio > 0.2 && fillRatio < 0.9;
+    const aligned = fillRatio > 0.15 && fillRatio < 0.95;
 
-    const stabilityScore = Math.max(
+    const alignmentConfidence = Math.max(
       0,
-      1 - movementVariance / 10
+      Math.min(1, (fillRatio - 0.15) / (0.7 - 0.15))
     );
 
+    const stabilityScore = computeStabilityScore();
+
+    const aspectRatio = estimateAspectRatio(corners);
+
     return {
+      hasContour: true,
       aligned,
       stabilityScore,
-      movementVariance
+      movementVariance,
+      alignmentConfidence,
+      aspectRatio
     };
   } catch {
     lastCorners = null;
+    cornerHistory.length = 0;
     return {
+      hasContour: false,
       aligned: false,
       stabilityScore: 0,
-      movementVariance: 0
+      movementVariance: 0,
+      alignmentConfidence: 0,
+      aspectRatio: 1
     };
   } finally {
     src.delete();
@@ -143,7 +170,11 @@ function computeMovementVariance(
   for (let i = 0; i < current.length; i += 1) {
     const dx = current[i].x - previous[i].x;
     const dy = current[i].y - previous[i].y;
-    sum += dx * dx + dy * dy;
+    const distSq = dx * dx + dy * dy;
+    if (distSq < 25) {
+      continue;
+    }
+    sum += distSq;
   }
   return sum / current.length;
 }
@@ -155,4 +186,46 @@ function polygonArea(points: { x: number; y: number }[]): number {
     sum += points[i].x * points[j].y - points[j].x * points[i].y;
   }
   return Math.abs(sum / 2);
+}
+
+function computeStabilityScore(): number {
+  if (cornerHistory.length < 2) {
+    return 0;
+  }
+  const reference = cornerHistory[cornerHistory.length - 1];
+  let variance = 0;
+  let count = 0;
+  for (let i = 0; i < cornerHistory.length - 1; i += 1) {
+    const frameCorners = cornerHistory[i];
+    if (frameCorners.length !== reference.length) continue;
+    for (let j = 0; j < reference.length; j += 1) {
+      const dx = frameCorners[j].x - reference[j].x;
+      const dy = frameCorners[j].y - reference[j].y;
+      variance += dx * dx + dy * dy;
+      count += 1;
+    }
+  }
+  if (count === 0) return 0;
+  const meanVariance = variance / count;
+  const normalized = meanVariance / 100;
+  const score = 1 - normalized;
+  return Math.max(0, Math.min(1, score));
+}
+
+function estimateAspectRatio(corners: { x: number; y: number }[]): number {
+  if (corners.length !== 4) return 1;
+  const width1 = distance(corners[0], corners[1]);
+  const width2 = distance(corners[2], corners[3]);
+  const height1 = distance(corners[1], corners[2]);
+  const height2 = distance(corners[3], corners[0]);
+  const width = (width1 + width2) / 2;
+  const height = (height1 + height2) / 2;
+  if (height === 0) return 1;
+  return height / width;
+}
+
+function distance(a: { x: number; y: number }, b: { x: number; y: number }) {
+  const dx = a.x - b.x;
+  const dy = a.y - b.y;
+  return Math.sqrt(dx * dx + dy * dy);
 }

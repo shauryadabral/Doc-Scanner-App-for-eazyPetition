@@ -2,17 +2,22 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import type { ScanPhase } from "../App";
 
 type WorkerMetrics = {
+  hasContour: boolean;
   aligned: boolean;
   stabilityScore: number;
   movementVariance: number;
+  alignmentConfidence: number;
+  aspectRatio: number;
 };
 
 type UseCameraResult = {
   videoRef: React.RefObject<HTMLVideoElement>;
   analysisCanvasRef: React.RefObject<HTMLCanvasElement>;
-  canCapture: boolean;
   metrics: WorkerMetrics | null;
   phase: ScanPhase;
+  alignmentMessage: string;
+  isReadyHint: boolean;
+  overlayOrientation: "portrait" | "landscape";
   start: () => Promise<void>;
   stop: () => void;
   captureFullResolution: () => Promise<string | null>;
@@ -20,15 +25,21 @@ type UseCameraResult = {
   phaseLabel: string;
 };
 
-const MOVEMENT_THRESHOLD = 3.5;
-const STABLE_DURATION_MS = 3000;
-const ANALYSIS_INTERVAL_MS = 120;
+const ANALYSIS_INTERVAL_MS = 70;
+const READY_THRESHOLD = 0.75;
+const STABLE_THRESHOLD = 0.65;
+const ALIGNMENT_CONFIDENCE_GOOD = 0.75;
 
 export function useCamera(initialPhase: ScanPhase): UseCameraResult {
   const [phase, setPhase] = useState<ScanPhase>(initialPhase);
   const [phaseLabel, setPhaseLabel] = useState("Start camera to scan a document");
-  const [canCapture, setCanCapture] = useState(false);
   const [metrics, setMetrics] = useState<WorkerMetrics | null>(null);
+  const [alignmentMessage, setAlignmentMessage] = useState(
+    "Place the document inside the frame"
+  );
+  const [isReadyHint, setIsReadyHint] = useState(false);
+  const [overlayOrientation, setOverlayOrientation] =
+    useState<"portrait" | "landscape">("portrait");
 
   const videoRef = useRef<HTMLVideoElement>(null);
   const analysisCanvasRef = useRef<HTMLCanvasElement>(null);
@@ -54,31 +65,50 @@ export function useCamera(initialPhase: ScanPhase): UseCameraResult {
       const data = event.data as WorkerMetrics;
       setMetrics(data);
 
-      const now = performance.now();
-      const underMovement = data.movementVariance < MOVEMENT_THRESHOLD;
-      const isStableFrame = data.aligned && underMovement;
+      const { hasContour, aligned, stabilityScore, alignmentConfidence, aspectRatio } =
+        data;
 
-      if (isStableFrame) {
+      const now = performance.now();
+      const isStable = stabilityScore >= STABLE_THRESHOLD && aligned && hasContour;
+
+      if (isStable) {
         if (stableStartRef.current == null) {
           stableStartRef.current = now;
         }
         const stableFor = now - stableStartRef.current;
-        if (stableFor >= STABLE_DURATION_MS) {
-          if (!canCapture) {
-            setCanCapture(true);
-            setPhase("ready");
-            setPhaseLabel("Ready to capture");
-          }
+        if (stableFor > 800 && stabilityScore >= READY_THRESHOLD) {
+          setPhase("ready");
+          setPhaseLabel("Ready to scan");
+          setAlignmentMessage("Ready to scan");
+          setIsReadyHint(true);
         } else {
-          setCanCapture(false);
           setPhase("holding");
-          setPhaseLabel("Hold steady");
+          setPhaseLabel("Hold steady…");
+          setAlignmentMessage("Hold steady…");
+          setIsReadyHint(false);
         }
       } else {
         stableStartRef.current = null;
-        setCanCapture(false);
-        setPhase("align");
-        setPhaseLabel("Align document");
+        setIsReadyHint(false);
+
+        if (!hasContour) {
+          setPhase("align");
+          setPhaseLabel("Align document");
+          setAlignmentMessage("Place document fully inside frame");
+        } else if (alignmentConfidence < ALIGNMENT_CONFIDENCE_GOOD) {
+          setPhase("align");
+          setPhaseLabel("Align document");
+          setAlignmentMessage("Adjust position slightly");
+        } else {
+          setPhase("holding");
+          setPhaseLabel("Hold steady…");
+          setAlignmentMessage("Hold steady…");
+        }
+      }
+
+      if (hasContour) {
+        const preferred = aspectRatio > 1 ? "portrait" : "landscape";
+        setOverlayOrientation(preferred);
       }
     };
 
@@ -86,7 +116,7 @@ export function useCamera(initialPhase: ScanPhase): UseCameraResult {
       worker.terminate();
       workerRef.current = null;
     };
-  }, [canCapture]);
+  }, []);
 
   const stopFrameLoop = () => {
     if (frameLoopRef.current != null) {
@@ -101,7 +131,6 @@ export function useCamera(initialPhase: ScanPhase): UseCameraResult {
       streamRef.current.getTracks().forEach(track => track.stop());
       streamRef.current = null;
     }
-    setCanCapture(false);
     stableStartRef.current = null;
   }, []);
 
@@ -127,6 +156,7 @@ export function useCamera(initialPhase: ScanPhase): UseCameraResult {
 
       setPhase("align");
       setPhaseLabel("Align document");
+      setAlignmentMessage("Place the document inside the frame");
 
       const loop = () => {
         frameLoopRef.current = requestAnimationFrame(loop);
@@ -187,9 +217,11 @@ export function useCamera(initialPhase: ScanPhase): UseCameraResult {
   return {
     videoRef,
     analysisCanvasRef,
-    canCapture,
     metrics,
     phase,
+    alignmentMessage,
+    isReadyHint,
+    overlayOrientation,
     start,
     stop,
     captureFullResolution,

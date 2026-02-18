@@ -117,10 +117,17 @@ body {
 
 .overlay-frame {
   position: absolute;
-  inset: 8%;
   border: 2px dashed rgba(239, 239, 239, 0.9);
   border-radius: 0.5rem;
   box-shadow: 0 0 0 1px rgba(15, 23, 42, 0.8), 0 0 50px rgba(15, 23, 42, 0.9) inset;
+}
+
+.overlay-portrait {
+  inset: 6% 18%;
+}
+
+.overlay-landscape {
+  inset: 10% 6%;
 }
 
 .camera-footer {
@@ -135,6 +142,11 @@ body {
   justify-content: space-between;
   font-size: 0.8rem;
   color: #cbd5f5;
+}
+
+.alignment-message {
+  font-size: 0.8rem;
+  color: #e5e7eb;
 }
 
 .camera-actions {
@@ -158,6 +170,11 @@ button.primary {
   background: linear-gradient(135deg, #22c55e, #0ea5e9);
   color: #0b1120;
   font-weight: 600;
+}
+
+.capture-ready {
+  box-shadow: 0 0 0 1px rgba(16, 185, 129, 0.7),
+    0 0 16px rgba(34, 197, 94, 0.6);
 }
 
 button:hover:enabled {

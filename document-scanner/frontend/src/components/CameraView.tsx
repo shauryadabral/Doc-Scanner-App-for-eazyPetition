@@ -18,8 +18,10 @@ export function CameraView({ onCapture, onPhaseChange }: Props) {
   const {
     videoRef,
     analysisCanvasRef,
-    canCapture,
     metrics,
+    alignmentMessage,
+    isReadyHint,
+    overlayOrientation,
     start,
     stop,
     captureFullResolution,
@@ -52,7 +54,7 @@ export function CameraView({ onCapture, onPhaseChange }: Props) {
   };
 
   const handleCapture = async () => {
-    if (!canCapture || capturing) return;
+    if (capturing) return;
     setCapturing(true);
     try {
       const base64 = await captureFullResolution();
@@ -69,6 +71,13 @@ export function CameraView({ onCapture, onPhaseChange }: Props) {
   const stabilityScore = metrics?.stabilityScore ?? 0;
   const movement = metrics?.movementVariance ?? 0;
 
+  const overlayClass =
+    overlayOrientation === "portrait"
+      ? "overlay-frame overlay-portrait"
+      : "overlay-frame overlay-landscape";
+
+  const captureClass = isReadyHint ? "primary capture-ready" : "primary";
+
   return (
     <section className="camera-section">
       <div className="camera-header">
@@ -83,7 +92,7 @@ export function CameraView({ onCapture, onPhaseChange }: Props) {
             className="camera-analysis-canvas"
             aria-hidden="true"
           />
-          <div className="overlay-frame" />
+          <div className={overlayClass} />
         </div>
       </div>
       <div className="camera-footer">
@@ -92,6 +101,7 @@ export function CameraView({ onCapture, onPhaseChange }: Props) {
           <span>Stability: {stabilityScore.toFixed(2)}</span>
           <span>Movement: {movement.toFixed(2)}</span>
         </div>
+        <div className="alignment-message">{alignmentMessage}</div>
         <div className="camera-actions">
           {!hasStarted && (
             <button
@@ -106,9 +116,9 @@ export function CameraView({ onCapture, onPhaseChange }: Props) {
           {hasStarted && (
             <button
               type="button"
-              className="primary"
+              className={captureClass}
               onClick={handleCapture}
-              disabled={!canCapture || capturing}
+              disabled={capturing}
             >
               {capturing ? "Capturing..." : "Capture"}
             </button>
