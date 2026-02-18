@@ -12,6 +12,8 @@ export function CameraView({ onCapture, onPhaseChange }: Props) {
   const [starting, setStarting] = useState(false);
   const [hasStarted, setHasStarted] = useState(false);
   const [capturing, setCapturing] = useState(false);
+  const [orientation, setOrientation] =
+    useState<"portrait" | "landscape">("portrait");
 
   const lastExternalPhase = useRef<ScanPhase>("idle");
 
@@ -21,7 +23,6 @@ export function CameraView({ onCapture, onPhaseChange }: Props) {
     metrics,
     alignmentMessage,
     isReadyHint,
-    overlayOrientation,
     start,
     stop,
     captureFullResolution,
@@ -60,11 +61,15 @@ export function CameraView({ onCapture, onPhaseChange }: Props) {
       const base64 = await captureFullResolution();
       if (base64) {
         onPhaseChange("capturing", "Capturing document");
-        await onCapture(base64);
+        void onCapture(base64);
       }
     } finally {
       setCapturing(false);
     }
+  };
+
+  const handleToggleOrientation = () => {
+    setOrientation(prev => (prev === "portrait" ? "landscape" : "portrait"));
   };
 
   const aligned = metrics?.aligned ?? false;
@@ -72,7 +77,7 @@ export function CameraView({ onCapture, onPhaseChange }: Props) {
   const movement = metrics?.movementVariance ?? 0;
 
   const overlayClass =
-    overlayOrientation === "portrait"
+    orientation === "portrait"
       ? "overlay-frame overlay-portrait"
       : "overlay-frame overlay-landscape";
 
@@ -114,14 +119,23 @@ export function CameraView({ onCapture, onPhaseChange }: Props) {
             </button>
           )}
           {hasStarted && (
-            <button
-              type="button"
-              className={captureClass}
-              onClick={handleCapture}
-              disabled={capturing}
-            >
-              {capturing ? "Capturing..." : "Capture"}
-            </button>
+            <>
+              <button
+                type="button"
+                onClick={handleToggleOrientation}
+                disabled={capturing}
+              >
+                {orientation === "portrait" ? "Portrait frame" : "Landscape frame"}
+              </button>
+              <button
+                type="button"
+                className={captureClass}
+                onClick={handleCapture}
+                disabled={capturing}
+              >
+                {capturing ? "Capturing..." : "Capture"}
+              </button>
+            </>
           )}
         </div>
       </div>

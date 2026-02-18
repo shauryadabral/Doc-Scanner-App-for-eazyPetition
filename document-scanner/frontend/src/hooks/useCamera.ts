@@ -18,7 +18,6 @@ type UseCameraResult = {
   phase: ScanPhase;
   alignmentMessage: string;
   isReadyHint: boolean;
-  overlayOrientation: "portrait" | "landscape";
   start: () => Promise<void>;
   stop: () => void;
   captureFullResolution: () => Promise<string | null>;
@@ -39,8 +38,6 @@ export function useCamera(initialPhase: ScanPhase): UseCameraResult {
     "Place the document inside the frame"
   );
   const [isReadyHint, setIsReadyHint] = useState(false);
-  const [overlayOrientation, setOverlayOrientation] =
-    useState<"portrait" | "landscape">("portrait");
 
   const videoRef = useRef<HTMLVideoElement>(null);
   const analysisCanvasRef = useRef<HTMLCanvasElement>(null);
@@ -66,14 +63,8 @@ export function useCamera(initialPhase: ScanPhase): UseCameraResult {
       const data = event.data as WorkerMetrics;
       setMetrics(data);
 
-      const {
-        hasContour,
-        aligned,
-        stabilityScore,
-        alignmentConfidence,
-        aspectRatio,
-        frameCoverage
-      } = data;
+      const { hasContour, aligned, stabilityScore, alignmentConfidence, frameCoverage } =
+        data;
 
       const now = performance.now();
       const isStable = stabilityScore >= STABLE_THRESHOLD && aligned && hasContour;
@@ -115,11 +106,6 @@ export function useCamera(initialPhase: ScanPhase): UseCameraResult {
           setPhaseLabel("Hold steady…");
           setAlignmentMessage("Hold steady…");
         }
-      }
-
-      if (hasContour) {
-        const preferred = aspectRatio > 1 ? "portrait" : "landscape";
-        setOverlayOrientation(preferred);
       }
     };
 
@@ -232,7 +218,6 @@ export function useCamera(initialPhase: ScanPhase): UseCameraResult {
     phase,
     alignmentMessage,
     isReadyHint,
-    overlayOrientation,
     start,
     stop,
     captureFullResolution,
