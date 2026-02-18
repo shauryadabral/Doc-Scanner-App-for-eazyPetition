@@ -13,6 +13,7 @@ type WorkerOutput = {
   movementVariance: number;
   alignmentConfidence: number;
   aspectRatio: number;
+  frameCoverage: number;
 };
 
 let lastCorners: { x: number; y: number }[] | null = null;
@@ -36,7 +37,8 @@ function processFrame(imageData: ImageData): WorkerOutput {
       stabilityScore: 0,
       movementVariance: 0,
       alignmentConfidence: 0,
-      aspectRatio: 1
+      aspectRatio: 1,
+      frameCoverage: 0
     };
   }
 
@@ -70,7 +72,8 @@ function processFrame(imageData: ImageData): WorkerOutput {
         stabilityScore: 0,
         movementVariance: 0,
         alignmentConfidence: 0,
-        aspectRatio: 1
+        aspectRatio: 1,
+        frameCoverage: 0
       };
     }
 
@@ -86,7 +89,7 @@ function processFrame(imageData: ImageData): WorkerOutput {
     const area = polygonArea(corners);
     const frameArea = imageData.width * imageData.height;
     const fillRatio = frameArea > 0 ? area / frameArea : 0;
-    const aligned = fillRatio > 0.15 && fillRatio < 0.95;
+    const aligned = fillRatio > 0.12 && fillRatio < 0.97;
 
     const alignmentConfidence = Math.max(
       0,
@@ -103,7 +106,8 @@ function processFrame(imageData: ImageData): WorkerOutput {
       stabilityScore,
       movementVariance,
       alignmentConfidence,
-      aspectRatio
+      aspectRatio,
+      frameCoverage: fillRatio
     };
   } catch {
     lastCorners = null;

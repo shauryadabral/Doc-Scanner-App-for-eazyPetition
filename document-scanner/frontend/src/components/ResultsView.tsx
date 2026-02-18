@@ -13,6 +13,10 @@ export function ResultsView({ result, error, onReset }: Props) {
       <section className="results">
         <h2>Scan error</h2>
         <p className="error-text">{error}</p>
+        <p className="hint-text">
+          If this keeps happening, check that the backend URL is reachable and
+          environment variables are set.
+        </p>
         <button type="button" className="primary" onClick={onReset}>
           Try again
         </button>
@@ -30,6 +34,9 @@ export function ResultsView({ result, error, onReset }: Props) {
   }
 
   const fields = result.fields as Record<string, unknown>;
+  const capturedPreviewUrl = result.capturedImageBase64
+    ? `data:image/jpeg;base64,${result.capturedImageBase64}`
+    : null;
 
   return (
     <section className="results">
@@ -52,6 +59,17 @@ export function ResultsView({ result, error, onReset }: Props) {
           );
         })}
       </dl>
+      {capturedPreviewUrl && (
+        <>
+          <h2>Debug preview</h2>
+          <div className="debug-preview">
+            <div>
+              <p>Captured image</p>
+              <img src={capturedPreviewUrl} alt="Captured document" />
+            </div>
+          </div>
+        </>
+      )}
       <h2>Raw OCR text</h2>
       <pre className="text-block">{result.text}</pre>
       <div className="results-actions">

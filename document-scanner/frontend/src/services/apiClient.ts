@@ -8,17 +8,31 @@ type ScanResponse = {
 };
 
 export async function scanDocument(imageBase64: string): Promise<ScanResponse> {
+  if (!API_BASE_URL) {
+    throw new Error(
+      "Backend URL not configured. Set VITE_API_BASE_URL in your environment."
+    );
+  }
+
   const payload = {
     image_base64: imageBase64
   };
 
-  const response = await fetch(`${API_BASE_URL}${SCAN_ENDPOINT}`, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json"
-    },
-    body: JSON.stringify(payload)
-  });
+  let response: Response;
+
+  try {
+    response = await fetch(`${API_BASE_URL}${SCAN_ENDPOINT}`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify(payload)
+    });
+  } catch {
+    throw new Error(
+      "Network error: could not reach OCR server. Check API URL and connection."
+    );
+  }
 
   if (!response.ok) {
     const message = await safeReadError(response);

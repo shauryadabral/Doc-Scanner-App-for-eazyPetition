@@ -8,6 +8,7 @@ type WorkerMetrics = {
   movementVariance: number;
   alignmentConfidence: number;
   aspectRatio: number;
+  frameCoverage: number;
 };
 
 type UseCameraResult = {
@@ -65,8 +66,14 @@ export function useCamera(initialPhase: ScanPhase): UseCameraResult {
       const data = event.data as WorkerMetrics;
       setMetrics(data);
 
-      const { hasContour, aligned, stabilityScore, alignmentConfidence, aspectRatio } =
-        data;
+      const {
+        hasContour,
+        aligned,
+        stabilityScore,
+        alignmentConfidence,
+        aspectRatio,
+        frameCoverage
+      } = data;
 
       const now = performance.now();
       const isStable = stabilityScore >= STABLE_THRESHOLD && aligned && hasContour;
@@ -94,11 +101,15 @@ export function useCamera(initialPhase: ScanPhase): UseCameraResult {
         if (!hasContour) {
           setPhase("align");
           setPhaseLabel("Align document");
-          setAlignmentMessage("Place document fully inside frame");
+          setAlignmentMessage("Point camera at document");
+        } else if (frameCoverage > 0.7) {
+          setPhase("holding");
+          setPhaseLabel("Hold steady…");
+          setAlignmentMessage("Hold steady");
         } else if (alignmentConfidence < ALIGNMENT_CONFIDENCE_GOOD) {
           setPhase("align");
           setPhaseLabel("Align document");
-          setAlignmentMessage("Adjust position slightly");
+          setAlignmentMessage("Move slightly closer");
         } else {
           setPhase("holding");
           setPhaseLabel("Hold steady…");
