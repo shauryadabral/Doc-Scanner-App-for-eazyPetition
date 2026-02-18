@@ -1,10 +1,11 @@
 fastapi
 uvicorn[standard]
 paddleocr
+paddlepaddle
 opencv-python-headless
 numpy
 reportlab
 pydantic
 python-multipart
 python-dotenv
- pydantic-settings
+pydantic-settings

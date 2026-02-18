@@ -8,14 +8,22 @@ from models.ocr_models import WordBox
 from . import text_cleaner, field_extractor
 
 
-ocr_engine = PaddleOCR(
-  use_angle_cls=True,
-  lang="en",
-)
+_ocr_engine: PaddleOCR | None = None
+
+
+def _get_ocr_engine() -> PaddleOCR:
+  global _ocr_engine
+  if _ocr_engine is None:
+    _ocr_engine = PaddleOCR(
+      use_angle_cls=True,
+      lang="en",
+    )
+  return _ocr_engine
 
 
 def run_ocr(image: np.ndarray):
-  result = ocr_engine.ocr(image, cls=True)
+  engine = _get_ocr_engine()
+  result = engine.ocr(image, cls=True)
   lines: List[Tuple[str, float]] = []
   words: List[WordBox] = []
   for block in result:
