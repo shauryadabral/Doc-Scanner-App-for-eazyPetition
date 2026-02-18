@@ -4,10 +4,88 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Document Scanner</title>
-    <script type="module" crossorigin src="/assets/index-DR_diNGV.js"></script>
+    <script type="module" crossorigin src="/assets/index-DVtBKkaY.js"></script>
     <link rel="stylesheet" crossorigin href="/assets/index-DKnNbTFC.css">
   </head>
   <body>
-    <div id="root"></div>
+    <div class="layout-root">
+      <header class="layout-header">
+        <h1>Document Scanner</h1>
+        <p>Privacy-first mobile web document scanner with real-time guidance</p>
+      </header>
+      <main class="layout-main">
+        <div id="status-banner" class="status-banner status-neutral">
+          <span id="status-label" class="status-label">
+            Start camera to scan a document
+          </span>
+        </div>
+        <div class="app-grid">
+          <div class="pane">
+            <section class="camera-section">
+              <div class="camera-header">
+                <h2>Live camera</h2>
+                <p>Place the document inside the frame and hold steady.</p>
+              </div>
+              <div class="camera-wrapper">
+                <div class="camera-frame">
+                  <video
+                    id="camera-video"
+                    class="camera-video"
+                    playsinline
+                    muted
+                  ></video>
+                  <canvas
+                    id="analysis-canvas"
+                    class="camera-analysis-canvas"
+                    aria-hidden="true"
+                  ></canvas>
+                  <div id="overlay-frame" class="overlay-frame overlay-portrait"></div>
+                </div>
+              </div>
+              <div class="camera-footer">
+                <div class="metrics">
+                  <span>Aligned: <span id="metric-aligned">No</span></span>
+                  <span>
+                    Stability:
+                    <span id="metric-stability">0.00</span>
+                  </span>
+                  <span>
+                    Movement:
+                    <span id="metric-movement">0.00</span>
+                  </span>
+                </div>
+                <div id="alignment-message" class="alignment-message">
+                  Place the document inside the frame
+                </div>
+                <div class="camera-actions">
+                  <button id="start-button" type="button" class="primary">
+                    Start camera
+                  </button>
+                  <button id="orientation-button" type="button" disabled>
+                    Portrait frame
+                  </button>
+                  <button
+                    id="capture-button"
+                    type="button"
+                    class="primary"
+                    disabled
+                  >
+                    Capture
+                  </button>
+                </div>
+              </div>
+            </section>
+          </div>
+          <div class="pane">
+            <section id="results-section" class="results">
+              <h2 id="results-title">Scan results</h2>
+              <div id="results-body">
+                <p>Scan a document to see extracted fields and text.</p>
+              </div>
+            </section>
+          </div>
+        </div>
+      </main>
+    </div>
   </body>
 </html>
