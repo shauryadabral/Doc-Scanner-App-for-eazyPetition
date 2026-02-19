@@ -23,3 +23,5 @@ if (
 export const API_BASE_URL = resolvedBaseUrl;
 
 export const SCAN_ENDPOINT = "/api/scan";
+export const SCAN_MULTIPART_ENDPOINT = "/api/scan-multipart";
+export const SCAN_URL_ENDPOINT = "/api/scan-url";

@@ -1,4 +1,4 @@
-import { API_BASE_URL, SCAN_ENDPOINT } from "../config/api";
+import { API_BASE_URL, SCAN_ENDPOINT, SCAN_MULTIPART_ENDPOINT, SCAN_URL_ENDPOINT } from "../config/api";
 
 type ScanResponse = {
   text: string;
@@ -98,6 +98,49 @@ export async function scanDocument(imageBase64: string): Promise<ScanResponse> {
     }
   }
   throw lastError ?? new Error("Unknown error while contacting OCR server.");
+}
+
+export async function scanDocumentBinary(imageBlob: Blob): Promise<ScanResponse> {
+  if (!API_BASE_URL) throw new Error("Backend URL not configured.");
+  const form = new FormData();
+  form.append("file", imageBlob, "capture.jpg");
+  const res = await fetchWithTimeout(
+    `${API_BASE_URL}${SCAN_MULTIPART_ENDPOINT}`,
+    {
+      method: "POST",
+      body: form,
+      cache: "no-store",
+      keepalive: false,
+      mode: "cors",
+    },
+    30000
+  );
+  if (!res.ok) {
+    const message = await safeReadError(res);
+    throw new Error(message);
+  }
+  return res.json();
+}
+
+export async function scanDocumentFromUrl(url: string): Promise<ScanResponse> {
+  if (!API_BASE_URL) throw new Error("Backend URL not configured.");
+  const res = await fetchWithTimeout(
+    `${API_BASE_URL}${SCAN_URL_ENDPOINT}`,
+    {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ url }),
+      cache: "no-store",
+      keepalive: false,
+      mode: "cors",
+    },
+    30000
+  );
+  if (!res.ok) {
+    const message = await safeReadError(res);
+    throw new Error(message);
+  }
+  return res.json();
 }
 
 async function safeReadError(response: Response): Promise<string> {

@@ -1,5 +1,5 @@
 import "./styles/global.css";
-import { scanDocument, checkBackendHealth } from "./services/apiClient";
+import { scanDocument, checkBackendHealth, scanDocumentBinary, scanDocumentFromUrl } from "./services/apiClient";
 import { downloadBase64Pdf } from "./utils/download";
 
 type ScanPhase =
@@ -58,6 +58,8 @@ const alignmentMessageEl = document.getElementById(
 const resultsSection = document.getElementById("results-section") as HTMLElement | null;
 const resultsTitle = document.getElementById("results-title") as HTMLHeadingElement | null;
 const resultsBody = document.getElementById("results-body") as HTMLDivElement | null;
+const urlInput = document.getElementById("url-input") as HTMLInputElement | null;
+const scanUrlButton = document.getElementById("scan-url-button") as HTMLButtonElement | null;
 
 let phase: ScanPhase = "idle";
 let orientation: "portrait" | "landscape" = "portrait";
@@ -269,6 +271,27 @@ async function captureFrame(): Promise<string | null> {
   return parts[1];
 }
 
+async function captureBlob(): Promise<Blob | null> {
+  if (!video || !video.videoWidth || !video.videoHeight) {
+    return null;
+  }
+  const srcW = video.videoWidth;
+  const srcH = video.videoHeight;
+  const scale = Math.min(MAX_CAPTURE_DIMENSION / Math.max(srcW, srcH), 1.0);
+  const outW = Math.max(1, Math.round(srcW * scale));
+  const outH = Math.max(1, Math.round(srcH * scale));
+  const canvas = document.createElement("canvas");
+  canvas.width = outW;
+  canvas.height = outH;
+  const context = canvas.getContext("2d");
+  if (!context) return null;
+  context.drawImage(video, 0, 0, canvas.width, canvas.height);
+  const blob = await new Promise<Blob | null>(resolve =>
+    canvas.toBlob(b => resolve(b), "image/jpeg", CAPTURE_QUALITY)
+  );
+  return blob;
+}
+
 function setResultsIdle() {
   if (!resultsTitle || !resultsBody) return;
   resultsTitle.textContent = "Scan results";
@@ -361,19 +384,27 @@ async function handleCapture() {
     if (!healthy) {
       setPhase("processing", "Contacting server…");
     }
-    const base64 = await captureFrame();
-    if (!base64) {
+    const blob = await captureBlob();
+    if (!blob) {
       showError("Failed to capture frame from camera.");
       return;
     }
     setPhase("processing", "Processing document on secure server");
     setResultsIdle();
-    const response = await scanDocument(base64);
+    const response = await scanDocumentBinary(blob);
     showResult({
       text: response.text,
       fields: response.fields as Record<string, unknown>,
       pdfBase64: response.pdf_base64,
-      capturedImageBase64: base64
+      capturedImageBase64: await new Promise<string>(resolve => {
+        const reader = new FileReader();
+        reader.onload = () => {
+          const result = reader.result as string;
+          const parts = result.split("base64,");
+          resolve(parts.length === 2 ? parts[1] : "");
+        };
+        reader.readAsDataURL(blob);
+      })
     });
   } catch (error) {
     const message =
@@ -421,6 +452,26 @@ function wireEvents() {
   }
   if (overlayFrame) {
     overlayFrame.classList.add("overlay-portrait");
+  }
+  if (scanUrlButton && urlInput) {
+    scanUrlButton.onclick = async () => {
+      const url = urlInput.value.trim();
+      if (!url) return;
+      setPhase("processing", "Processing document from URL");
+      setResultsIdle();
+      try {
+        const response = await scanDocumentFromUrl(url);
+        showResult({
+          text: response.text,
+          fields: response.fields as Record<string, unknown>,
+          pdfBase64: response.pdf_base64,
+          capturedImageBase64: ""
+        });
+      } catch (e) {
+        const msg = e instanceof Error ? e.message : "Failed to scan URL";
+        showError(msg);
+      }
+    };
   }
 }
 
