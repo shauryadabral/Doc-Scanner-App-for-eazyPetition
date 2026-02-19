@@ -1,6 +1,7 @@
 import "./styles/global.css";
 import { scanDocument, checkBackendHealth, scanDocumentBinary, scanDocumentFromUrl } from "./services/apiClient";
 import { downloadBase64Pdf } from "./utils/download";
+import { API_BASE_URL } from "./config/api";
 
 type ScanPhase =
   | "idle"

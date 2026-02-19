@@ -1,4 +1,4 @@
-const envBaseUrl = "https://doc-scanner-app-for-eazypetition.onrender.com";//hardcoded for now, after sometime add env variable to the frontend deployment.
+const envBaseUrl = "https://scanner-315573396009.us-central1.run.app";//hardcoded for now, after sometime add env variable to the frontend deployment.
 let resolvedBaseUrl = envBaseUrl;
 
 if (!resolvedBaseUrl || resolvedBaseUrl.length === 0) {
