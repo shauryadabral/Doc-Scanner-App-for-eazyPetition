@@ -25,3 +25,9 @@ export const API_BASE_URL = resolvedBaseUrl;
 export const SCAN_ENDPOINT = "/api/scan";
 export const SCAN_MULTIPART_ENDPOINT = "/api/scan-multipart";
 export const SCAN_URL_ENDPOINT = "/api/scan-url";
+
+export const API_BASE_URLS: string[] = [
+  resolvedBaseUrl,
+  // Add additional backends here when available, e.g. a Cloud Run/Railway URL:
+  // "https://doc-scanner-backend-xyz.a.run.app",
+];

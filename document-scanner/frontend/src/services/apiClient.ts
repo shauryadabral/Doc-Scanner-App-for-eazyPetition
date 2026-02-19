@@ -1,4 +1,4 @@
-import { API_BASE_URL, SCAN_ENDPOINT, SCAN_MULTIPART_ENDPOINT, SCAN_URL_ENDPOINT } from "../config/api";
+import { API_BASE_URL, API_BASE_URLS, SCAN_ENDPOINT, SCAN_MULTIPART_ENDPOINT, SCAN_URL_ENDPOINT } from "../config/api";
 
 type ScanResponse = {
   text: string;
@@ -25,18 +25,17 @@ async function fetchWithTimeout(
   }
 }
 
-export async function checkBackendHealth(): Promise<boolean> {
-  if (!API_BASE_URL) return false;
+export async function checkBackendHealth(baseUrl: string): Promise<boolean> {
   try {
     const res = await fetchWithTimeout(
-      `${API_BASE_URL}/health`,
+      `${baseUrl}/health`,
       {
         method: "GET",
         headers: { Accept: "application/json" },
         cache: "no-store",
         keepalive: false,
       },
-      8000
+      4000
     );
     if (!res.ok) return false;
     const data = await res.json().catch(() => ({}));
@@ -46,8 +45,18 @@ export async function checkBackendHealth(): Promise<boolean> {
   }
 }
 
+async function resolveAvailableBaseUrl(): Promise<string | null> {
+  const candidates = (API_BASE_URLS && API_BASE_URLS.length > 0) ? API_BASE_URLS : (API_BASE_URL ? [API_BASE_URL] : []);
+  for (const url of candidates) {
+    const ok = await checkBackendHealth(url);
+    if (ok) return url;
+  }
+  return candidates.length > 0 ? candidates[0] : null;
+}
+
 export async function scanDocument(imageBase64: string): Promise<ScanResponse> {
-  if (!API_BASE_URL) {
+  const baseUrl = await resolveAvailableBaseUrl();
+  if (!baseUrl) {
     throw new Error("Backend URL not configured. Set VITE_API_BASE_URL in your environment.");
   }
 
@@ -62,7 +71,7 @@ export async function scanDocument(imageBase64: string): Promise<ScanResponse> {
     attempt += 1;
     try {
       const response = await fetchWithTimeout(
-        `${API_BASE_URL}${SCAN_ENDPOINT}`,
+        `${baseUrl}${SCAN_ENDPOINT}`,
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -101,11 +110,12 @@ export async function scanDocument(imageBase64: string): Promise<ScanResponse> {
 }
 
 export async function scanDocumentBinary(imageBlob: Blob): Promise<ScanResponse> {
-  if (!API_BASE_URL) throw new Error("Backend URL not configured.");
+  const baseUrl = await resolveAvailableBaseUrl();
+  if (!baseUrl) throw new Error("Backend URL not configured.");
   const form = new FormData();
   form.append("file", imageBlob, "capture.jpg");
   const res = await fetchWithTimeout(
-    `${API_BASE_URL}${SCAN_MULTIPART_ENDPOINT}`,
+    `${baseUrl}${SCAN_MULTIPART_ENDPOINT}`,
     {
       method: "POST",
       body: form,
@@ -123,9 +133,10 @@ export async function scanDocumentBinary(imageBlob: Blob): Promise<ScanResponse>
 }
 
 export async function scanDocumentFromUrl(url: string): Promise<ScanResponse> {
-  if (!API_BASE_URL) throw new Error("Backend URL not configured.");
+  const baseUrl = await resolveAvailableBaseUrl();
+  if (!baseUrl) throw new Error("Backend URL not configured.");
   const res = await fetchWithTimeout(
-    `${API_BASE_URL}${SCAN_URL_ENDPOINT}`,
+    `${baseUrl}${SCAN_URL_ENDPOINT}`,
     {
       method: "POST",
       headers: { "Content-Type": "application/json" },

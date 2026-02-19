@@ -380,7 +380,7 @@ async function handleCapture() {
   setReadyHint(false);
   setPhase("capturing", "Capturing document");
   try {
-    const healthy = await checkBackendHealth();
+    const healthy = await checkBackendHealth(API_BASE_URL);
     if (!healthy) {
       setPhase("processing", "Contacting server…");
     }
