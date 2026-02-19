@@ -1,5 +1,5 @@
 import "./styles/global.css";
-import { scanDocument } from "./services/apiClient";
+import { scanDocument, checkBackendHealth } from "./services/apiClient";
 import { downloadBase64Pdf } from "./utils/download";
 
 type ScanPhase =
@@ -26,6 +26,8 @@ const ANALYSIS_INTERVAL_MS = 70;
 const READY_THRESHOLD = 0.75;
 const STABLE_THRESHOLD = 0.65;
 const ALIGNMENT_CONFIDENCE_GOOD = 0.75;
+const MAX_CAPTURE_DIMENSION = 1500;
+const CAPTURE_QUALITY = 0.82;
 
 const video = document.getElementById("camera-video") as HTMLVideoElement | null;
 const analysisCanvas = document.getElementById(
@@ -250,13 +252,18 @@ async function captureFrame(): Promise<string | null> {
   if (!video || !video.videoWidth || !video.videoHeight) {
     return null;
   }
+  const srcW = video.videoWidth;
+  const srcH = video.videoHeight;
+  const scale = Math.min(MAX_CAPTURE_DIMENSION / Math.max(srcW, srcH), 1.0);
+  const outW = Math.max(1, Math.round(srcW * scale));
+  const outH = Math.max(1, Math.round(srcH * scale));
   const canvas = document.createElement("canvas");
-  canvas.width = video.videoWidth;
-  canvas.height = video.videoHeight;
+  canvas.width = outW;
+  canvas.height = outH;
   const context = canvas.getContext("2d");
   if (!context) return null;
   context.drawImage(video, 0, 0, canvas.width, canvas.height);
-  const dataUrl = canvas.toDataURL("image/jpeg", 0.92);
+  const dataUrl = canvas.toDataURL("image/jpeg", CAPTURE_QUALITY);
   const parts = dataUrl.split("base64,");
   if (parts.length !== 2) return null;
   return parts[1];
@@ -350,6 +357,10 @@ async function handleCapture() {
   setReadyHint(false);
   setPhase("capturing", "Capturing document");
   try {
+    const healthy = await checkBackendHealth();
+    if (!healthy) {
+      setPhase("processing", "Contacting server…");
+    }
     const base64 = await captureFrame();
     if (!base64) {
       showError("Failed to capture frame from camera.");
