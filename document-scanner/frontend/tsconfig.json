@@ -13,8 +13,14 @@
     "moduleResolution": "bundler",
     "resolveJsonModule": true,
     "isolatedModules": true,
-    "noEmit": true,
-    "jsx": "react-jsx"
+    "noEmit": true
   },
-  "include": ["src"]
+  "include": [
+    "src/main.ts",
+    "src/vite-env.d.ts",
+    "src/config/**/*.ts",
+    "src/services/**/*.ts",
+    "src/utils/**/*.ts",
+    "src/workers/**/*.ts"
+  ]
 }

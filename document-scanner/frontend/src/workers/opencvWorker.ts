@@ -118,7 +118,8 @@ function processFrame(imageData: ImageData): WorkerOutput {
       stabilityScore: 0,
       movementVariance: 0,
       alignmentConfidence: 0,
-      aspectRatio: 1
+      aspectRatio: 1,
+      frameCoverage: 0
     };
   } finally {
     src.delete();
